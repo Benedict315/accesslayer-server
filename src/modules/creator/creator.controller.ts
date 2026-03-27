@@ -2,7 +2,12 @@
 import { Request, Response } from 'express';
 import { ZodError } from 'zod';
 import { z } from 'zod';
-import { sendPaginatedSuccess, sendError, sendValidationError, ErrorCode } from '../../utils/api-response.utils';
+import {
+   sendPaginatedSuccess,
+   sendError,
+   sendValidationError,
+   ErrorCode,
+} from '../../utils/api-response.utils';
 import { getPaginatedCreators } from './creator.service';
 import { parseCreatorSortOptions } from './creator.utils';
 import { safeIntParam } from '../../utils/query.utils';
@@ -42,7 +47,13 @@ export async function listCreators(req: Request, res: Response) {
          sort,
       });
 
-      return sendPaginatedSuccess(res, creators, meta, 200, 'Creators retrieved successfully');
+      return sendPaginatedSuccess(
+         res,
+         creators,
+         meta,
+         200,
+         'Creators retrieved successfully'
+      );
    } catch (error) {
       if (error instanceof ZodError) {
          const details = error.errors.map(err => ({
@@ -52,6 +63,11 @@ export async function listCreators(req: Request, res: Response) {
          return sendValidationError(res, 'Invalid query parameters', details);
       }
       console.error('Error listing creators:', error);
-      return sendError(res, 500, ErrorCode.INTERNAL_ERROR, 'Failed to retrieve creators');
+      return sendError(
+         res,
+         500,
+         ErrorCode.INTERNAL_ERROR,
+         'Failed to retrieve creators'
+      );
    }
 }
