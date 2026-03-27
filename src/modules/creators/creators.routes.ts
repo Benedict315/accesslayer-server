@@ -1,9 +1,6 @@
 import { Router } from 'express';
 import { httpListCreators } from './creators.controllers';
-import {
-   cacheControl,
-   CachePresets,
-} from '../../middlewares/cache-control.middleware';
+import { setPublicHeaders } from '../../utils/public-headers.utils';
 
 const creatorsRouter = Router();
 
@@ -13,10 +10,6 @@ const creatorsRouter = Router();
  * List all creators with pagination and filtering.
  * Public endpoint with 5-minute cache.
  */
-creatorsRouter.get(
-   '/',
-   cacheControl(CachePresets.publicShort),
-   httpListCreators
-);
+creatorsRouter.get('/', setPublicHeaders, httpListCreators);
 
 export default creatorsRouter;

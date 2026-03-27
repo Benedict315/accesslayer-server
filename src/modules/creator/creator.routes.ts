@@ -1,6 +1,7 @@
 // src/modules/creator/creator.routes.ts
 import { Router } from 'express';
 import { listCreators } from './creator.controller';
+import { setPublicHeaders } from '../../utils/public-headers.utils';
 
 const router = Router();
 
@@ -9,6 +10,6 @@ const router = Router();
  * @desc Get a paginated list of creators
  * @access Public
  */
-router.get('/', listCreators);
+router.get('/', setPublicHeaders, listCreators);
 
 export default router;
