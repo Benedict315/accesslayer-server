@@ -10,6 +10,10 @@ import {
    MIN_PAGE_SIZE,
    MAX_PAGE_SIZE,
 } from '../../constants/pagination.constants';
+import {
+   DEFAULT_CREATOR_LIST_SORT,
+   DEFAULT_CREATOR_LIST_ORDER,
+} from '../../constants/creator-list-sort.constants';
 
 /**
  * Validation schema for creator list query parameters.
@@ -36,8 +40,11 @@ export const CreatorListQuerySchema = z.object({
    }),
 
    // Sorting
-   sort: z.enum(CREATOR_LIST_SORT_OPTIONS).optional().default('createdAt'),
-   order: z.enum(CREATOR_LIST_SORT_ORDERS).optional().default('desc'),
+   sort: z.enum(CREATOR_LIST_SORT_OPTIONS).optional().default(DEFAULT_CREATOR_LIST_SORT),
+   order: z
+      .enum(CREATOR_LIST_SORT_ORDERS)
+      .optional()
+      .default(DEFAULT_CREATOR_LIST_ORDER),
 
    // Filters
    verified: z
