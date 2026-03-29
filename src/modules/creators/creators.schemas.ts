@@ -52,10 +52,7 @@ export const CreatorListQuerySchema = z.object({
     z
       .string()
       .optional()
-      .transform(val => {
-        if (val === undefined) return undefined;
-        return val === 'true';
-      })
+      .transform(val => (val === undefined ? undefined : val === 'true'))
   ),
   search: withCreatorListQueryStringNormalization(
     z
