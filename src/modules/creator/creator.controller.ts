@@ -33,20 +33,20 @@ export const listCreators: RequestHandler = async (req, res) => {
       return sendValidationError(res, 'Invalid query parameters', parsed.details);
     }
 
-    // Destructure data once
-    let { page, limit, sortBy, sortOrder } = parsed.data;
+    // Destructure using correct schema properties
+    const { offset, limit, sort, order: sortOrder } = parsed.data;
 
-    // Normalize page number
-    page = normalizeCreatorListPage(page);
+    // Convert offset to page number if needed
+    const page = normalizeCreatorListPage(offset);
 
     // Build sort options
-    const sort = parseCreatorSortOptions(sortBy, sortOrder);
+    const sortOptions = parseCreatorSortOptions(sort, sortOrder);
 
     // Fetch paginated creators
     const { creators, meta } = await getPaginatedCreators({
       page,
       limit,
-      sort,
+      sort: sortOptions,
     });
 
     // Send success response
