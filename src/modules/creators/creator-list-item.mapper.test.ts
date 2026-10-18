@@ -1,19 +1,41 @@
-import { strict as assert } from 'assert';
+jest.mock('../../utils/prisma.utils', () => ({
+   prisma: {},
+}));
+
+jest.mock('../../utils/price-change.utils', () => ({
+   computePriceChange: jest.fn().mockResolvedValue(null),
+}));
+
 import { mapCreatorListItem } from './creator-list-item.mapper';
+import { createSeededCreatorFixture } from '../../utils/test/seeded-creator-fixtures.utils';
 
-function run() {
-   const input = { id: '1', displayName: 'John', avatarUrl: null } as any;
+describe('mapCreatorListItem()', () => {
+   it('maps the public creator list item shape', async () => {
+      const input = createSeededCreatorFixture(1);
 
-   const result = mapCreatorListItem(input);
+      const result = await mapCreatorListItem(input);
 
-   assert.deepEqual(result, {
-      id: '1',
-      name: 'John',
-      avatar: null,
-      followers: 0,
+      expect(result).toEqual({
+         id: 'creator-1',
+         name: 'Creator 1',
+         avatar: 'https://example.com/avatar-1.png',
+         followers: 0,
+         createdAt: expect.any(String),
+         updatedAt: expect.any(String),
+         currentPrice: null,
+         price24hAgo: null,
+         priceChange24h: null,
+         deprecated: false,
+      });
    });
 
-   console.log('creator-list-item.mapper test passed');
-}
+   it('flags a deprecated key', async () => {
+      const input = createSeededCreatorFixture(2, {
+         deprecatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      });
 
-run();
+      const result = await mapCreatorListItem(input);
+
+      expect(result.deprecated).toBe(true);
+   });
+});

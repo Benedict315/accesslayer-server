@@ -8,15 +8,39 @@
  * stay in sync without duplicating field lists.
  */
 export const CREATOR_DETAIL_DEFAULT_SELECT = {
-  id: true,
-  handle: true,
-  displayName: true,
-  bio: true,
-  avatarUrl: true,
-  perks: true,
-  isVerified: true,
-  createdAt: true,
-  updatedAt: true,
+   id: true,
+   handle: true,
+   displayName: true,
+   bio: true,
+   avatarUrl: true,
+   avatarCid: true,
+   twitter: true,
+   website: true,
+   discord: true,
+   perks: true,
+   isVerified: true,
+   tradingPaused: true,
+   currentMilestone: true,
+   relaunchCount: true,
+   createdAt: true,
+   updatedAt: true,
+   user: {
+      select: {
+         stellarWallet: {
+            select: {
+               address: true,
+            },
+         },
+      },
+   },
+   priceSnapshot: {
+      select: {
+         currentPrice: true,
+         price24hAgo: true,
+         lastTradeAt: true,
+      },
+   },
 } as const;
 
-export type CreatorDetailSelectKeys = keyof typeof CREATOR_DETAIL_DEFAULT_SELECT;
+export type CreatorDetailSelectKeys =
+   keyof typeof CREATOR_DETAIL_DEFAULT_SELECT;

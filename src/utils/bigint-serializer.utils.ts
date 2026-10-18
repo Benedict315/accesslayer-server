@@ -47,6 +47,7 @@ export function safeJsonStringify(value: unknown, space?: number): string {
  */
 export function sanitizeBigInts(value: unknown): unknown {
    if (typeof value === 'bigint') return value.toString();
+   if (value instanceof Date) return value.toISOString();
    if (Array.isArray(value)) return value.map(sanitizeBigInts);
    if (value !== null && typeof value === 'object') {
       return Object.fromEntries(
@@ -58,3 +59,14 @@ export function sanitizeBigInts(value: unknown): unknown {
    }
    return value;
 }
+
+/**
+ * Recursively converts BigInt values to their decimal string representation.
+ * Alias for `sanitizeBigInts` — use this name when the intent is to prepare
+ * a value for JSON serialization in API responses.
+ *
+ * @example
+ * serializeBigInt({ amount: 1000000000000000000n });
+ * // → { amount: "1000000000000000000" }
+ */
+export const serializeBigInt = sanitizeBigInts;

@@ -15,6 +15,10 @@ interface ProtocolConfig {
    apiVersion: string;
    /** Stellar network the server targets */
    network: string;
+   /** Stellar Horizon API endpoint */
+   horizonUrl: string;
+   /** Stellar Soroban RPC endpoint */
+   sorobanRpcUrl: string;
    /** Feature flags for conditional client behaviour */
    features: {
       walletConnect: boolean;
@@ -28,14 +32,13 @@ interface ProtocolConfig {
    };
 }
 
-export const httpGetProtocolConfig = (
-   _req: Request,
-   res: Response
-): void => {
+export const httpGetProtocolConfig = (_req: Request, res: Response): void => {
    const config: ProtocolConfig = {
       environment: envConfig.MODE,
       apiVersion: 'v1',
-      network: envConfig.MODE === 'production' ? 'mainnet' : 'testnet',
+      network: envConfig.STELLAR_NETWORK,
+      horizonUrl: envConfig.STELLAR_HORIZON_URL,
+      sorobanRpcUrl: envConfig.STELLAR_SOROBAN_RPC_URL,
       features: {
          walletConnect: true,
          emailVerification: true,

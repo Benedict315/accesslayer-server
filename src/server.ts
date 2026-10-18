@@ -9,8 +9,43 @@ import { startWALRecoveryWorker, stopWALRecoveryWorker } from './modules/wal/wal
 
 async function startServer() {
    try {
+      // Validate indexer feature flags before any code paths read them. We
+      // fail fast here so operators see every misconfiguration at once
+      // instead of cryptic runtime errors later in the boot sequence.
+      try {
+         runIndexerFeatureFlagsStartupCheck();
+      } catch (err) {
+         if (err instanceof IndexerFlagsConfigError) {
+            logger.error(
+               { issues: err.issues },
+               'Refusing to start: indexer feature flags are misconfigured'
+            );
+            process.exit(1);
+         }
+         throw err;
+      }
+
       await prisma.$connect();
       logger.info('Connected to database');
+
+      await connectRedis();
+      logger.info('Connected to Redis');
+
+      // Surface connection-pool settings (no credentials) so connection
+      // exhaustion is diagnosable. Logged before the server accepts requests.
+      logger.info(
+         describeDatabasePoolConfig(),
+         'Database connection pool configured'
+      );
+
+      // Emit a structured summary of the loaded runtime config: environment
+      // context and key feature flags. Values flow through the masking helper,
+      // so no secrets or credentials are logged. See
+      // utils/config-summary.utils.ts for the curated field selection.
+      logger.info(
+         buildStartupConfigSummary(),
+         'Loaded runtime configuration summary'
+      );
 
       // Verify migrations on startup
       await verifyMigrationChecksums();
@@ -24,26 +59,43 @@ async function startServer() {
 
       return server;
    } catch (error) {
-      console.error('Failed to start server:', error);
+      logger.error({ error }, 'Failed to start server');
       await prisma.$disconnect();
+      await disconnectRedis().catch(() => {});
       process.exit(1);
    }
 }
 
 // Handle uncaught exceptions
 process.on('uncaughtException', error => {
-   console.error('Uncaught Exception:', error);
+   logger.fatal({ error }, 'Uncaught exception');
    process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+   logger.fatal({ reason, promise }, 'Unhandled promise rejection');
    process.exit(1);
 });
 
 function createGracefulShutdownHandler(server: ReturnType<typeof app.listen>) {
-   return async (_signal: string) => {
-      console.log('\n⏹️  Graceful shutdown initiated');
+   return async () => {
+      logger.info('Shutting down SSE connections');
+      broadcastServerClosing();
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      closeAllConnections();
+
+      stopOwnershipSnapshotCleanupJob();
+      stopDetectPriceMovementsJob();
+      stopGovernanceSyncJob();
+      stopPriceHistoryCleanupJob();
+      stopTwapComputationJob();
+      stopFlashLoanViolationCleanupJob();
+      stopStatusProbeJob();
+      await prisma.$disconnect();
+      logger.info('Database connection closed');
+
+      await disconnectRedis().catch(() => {});
+      logger.info('Redis connection closed');
 
       const DRAIN_WINDOW_MS = 5000;
       const SHUTDOWN_TIMEOUT_MS = 30000;
@@ -53,7 +105,7 @@ function createGracefulShutdownHandler(server: ReturnType<typeof app.listen>) {
       });
 
       const shutdownTimer = setTimeout(() => {
-         console.error('❌ Shutdown timeout reached, forcing exit');
+         logger.error('Shutdown timeout reached, forcing exit');
          process.exit(1);
       }, SHUTDOWN_TIMEOUT_MS);
 
@@ -62,18 +114,21 @@ function createGracefulShutdownHandler(server: ReturnType<typeof app.listen>) {
          stopWALRecoveryWorker();
          console.log('✅ HTTP server closed, draining requests');
 
-         await new Promise((resolve) => setTimeout(resolve, DRAIN_WINDOW_MS));
+         await new Promise(resolve => setTimeout(resolve, DRAIN_WINDOW_MS));
 
          await prisma.$disconnect();
-         console.log('💾 Database connection closed');
+         logger.info('Database connection closed');
 
-         console.log('👋 Shutdown complete');
+         await disconnectRedis().catch(() => {});
+         logger.info('Redis connection closed');
+
+         logger.info('Shutdown complete');
          process.exit(0);
       });
    };
 }
 
-startServer().then((server) => {
+startServer().then(server => {
    const shutdownHandler = createGracefulShutdownHandler(server);
    process.on('SIGINT', shutdownHandler);
    process.on('SIGTERM', shutdownHandler);
