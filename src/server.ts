@@ -5,7 +5,7 @@ import { envConfig } from './config';
 import { logger } from './utils/logger.utils';
 import { prisma } from './utils/prisma.utils';
 import { verifyMigrationChecksums } from './utils/migration-checksum.utils';
-
+import { startWALRecoveryWorker, stopWALRecoveryWorker } from './modules/wal/wal-recovery.worker';
 
 async function startServer() {
    try {
@@ -14,6 +14,9 @@ async function startServer() {
 
       // Verify migrations on startup
       await verifyMigrationChecksums();
+
+      // Start WAL recovery worker
+      await startWALRecoveryWorker();
 
       const server = app.listen(envConfig.PORT, () => {
          logger.info(`Server running on port ${envConfig.PORT}`);
@@ -56,6 +59,7 @@ function createGracefulShutdownHandler(server: ReturnType<typeof app.listen>) {
 
       server.close(async () => {
          clearTimeout(shutdownTimer);
+         stopWALRecoveryWorker();
          console.log('✅ HTTP server closed, draining requests');
 
          await new Promise((resolve) => setTimeout(resolve, DRAIN_WINDOW_MS));

@@ -57,6 +57,8 @@ export const envSchema = z.object({
    INDEXER_JITTER_FACTOR: z.coerce.number().min(0).max(1).default(0.1),
    BACKGROUND_JOB_LOCK_TTL_MS: z.coerce.number().int().positive().default(300000),
    CREATOR_LIST_SLOW_QUERY_THRESHOLD_MS: z.coerce.number().int().positive().default(500),
+   HORIZON_URL: z.string().url().default('https://horizon-testnet.stellar.org'),
+   SOROBAN_RPC_URL: z.string().url().default('https://soroban-testnet.stellar.org'),
 });
 
 export const envConfig = envSchema.parse(process.env);
