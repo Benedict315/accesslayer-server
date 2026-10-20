@@ -94,6 +94,7 @@ function createGracefulShutdownHandler(server: ReturnType<typeof app.listen>) {
       stopFlashLoanViolationCleanupJob();
       stopStatusProbeJob();
       stopSessionActivityCleanupJob();
+      stopCampaignCronJobs();
       await prisma.$disconnect();
       logger.info('Database connection closed');
 
