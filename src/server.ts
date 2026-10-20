@@ -56,6 +56,7 @@ async function startServer() {
       const server = app.listen(envConfig.PORT, () => {
          logger.info(`Server running on port ${envConfig.PORT}`);
       });
+      attachPriceWebSocketGateway(server);
 
       return server;
    } catch (error) {
@@ -83,6 +84,7 @@ function createGracefulShutdownHandler(server: ReturnType<typeof app.listen>) {
       broadcastServerClosing();
       await new Promise(resolve => setTimeout(resolve, 1000));
       closeAllConnections();
+      closePriceWebSocketGateway(server);
 
       stopOwnershipSnapshotCleanupJob();
       stopDetectPriceMovementsJob();
@@ -91,6 +93,7 @@ function createGracefulShutdownHandler(server: ReturnType<typeof app.listen>) {
       stopTwapComputationJob();
       stopFlashLoanViolationCleanupJob();
       stopStatusProbeJob();
+      stopSessionActivityCleanupJob();
       await prisma.$disconnect();
       logger.info('Database connection closed');
 
